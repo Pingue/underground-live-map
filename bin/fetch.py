@@ -10,6 +10,7 @@ import time
 import os
 import os.path
 import mx.DateTime
+import xmltodict
 
 import optparse
 
@@ -266,9 +267,33 @@ if format=='traintimes':
             })
     grr = json.dumps(outJ, indent=4)
 
-    stations = open(dir + 'london-stations-new2.js').read()
-    grr = grr[:-2] + ',\n' + stations + '}' 
+###start bike
+    api = 'https://tfl.gov.uk/tfl/syndication/feeds/cycle-hire/livecyclehireupdates.xml'
+    try:
+    	if time.time() - os.path.getmtime('cache/bike') > 100:
+    		raise Exception, 'Too old'
+    	live = open(dir + 'cache/bike').read()
+    except:
+    	live = urllib.urlopen(api).read()
+    	fp = open(dir + 'cache/bike' , 'w')
+    	fp.write(live)
+    	fp.close()
+    
+    print_debug( "Processing XML")
+    #with open('/root/bike.xml') as fd:
+    obj = xmltodict.parse(live) #fd.read()
+#    for station in obj['stations']['station']:
+#    	print station['name']+station['lat']+station['long']+station['nbBikes']+station['nbEmptyDocks']+station['nbDocks']
+    
+    grrbike = json.dumps(obj['stations']['station'], indent=4)
+    grrbike= grrbike.replace("station", "bike")
+#    print grrbike
 
+###end bike
+
+    stations = open(dir + 'london-stations-new2.js').read()
+    grr = grr[:-2] + ',\n' + stations + ',\n "bikes": ' + grrbike + '}' 
+#    print grr
     fp = open(dir + '../data/london.jsonN', 'w')
     fp.write(grr)
     fp.close()

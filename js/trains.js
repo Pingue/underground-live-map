@@ -1,10 +1,17 @@
 var map = null;
 var trains = new L.LayerGroup([]);
 var stations = new L.FeatureGroup([]);
+var bikes = new L.FeatureGroup([]);
 var train_by_id = new Array();
 var starttime = new Date();
 var extra = 0;
 var Speed = 1;
+
+$(function() {
+		 $('.layerChoice').click(function() {
+			 Update.mapStart();
+			 });
+		});
 
 function read_hash() {
     var query = window.location.search.substring(1);
@@ -37,7 +44,7 @@ function load() {
     L.control.attribution({ position: 'topleft' }).addTo(map);
 
     var tile_url, layer_opts = {
-        minZoom: TrainTimes.minZoom || 10,
+        minZoom: TrainTimes.minZoom || 7,
         maxZoom: 18
     };
     if (TrainTimes.map == 'black') {
@@ -52,6 +59,7 @@ function load() {
     L.tileLayer(tile_url, layer_opts).addTo(map);
     trains.addTo(map);
     stations.addTo(map);
+    bikes.addTo(map);
     Update.mapStart();
 }
 
@@ -90,6 +98,47 @@ if (TrainTimes.station_icon) {
                 fillOpacity: 1
             });
             this.bindLabel(station.name);
+        }
+    });
+}
+
+
+var Bike;
+if (TrainTimes.bike_icon) {
+    var baseIcon = L.Icon.extend({
+        options: {
+            shadowUrl: "http://traintimes.org.uk/map/tube/i/pin_shadow.png",
+            shadowSize: [ 22, 20 ],
+            shadowAnchor: [ 6, 20 ]
+        }
+    });
+    Bike = L.Marker.extend({
+        initialize: function(bike, options) {
+	    var bikelatlong = L.latLng(bike.lat, bike.long)
+            L.Marker.prototype.initialize.call(this, bikelatlong, options);
+            this.bindLabel(bike.name + "<br/>" + bike.nbBikes + " bikes available, " + bike.nbEmptyDocks + " slots free");
+        },
+        options: {
+            icon: new baseIcon({
+		iconUrl: "http://www.gcmtb.com.au/Images/Icons/20x20/MountainBike.png",
+		iconSize: [ 20, 20 ],
+                iconAnchor: [ 10, 20 ],
+                labelAnchor: [ 4, -13 ]
+            })
+        }
+    });
+} else {
+    Bike = L.CircleMarker.extend({
+        initialize: function(bike, options) {
+            L.CircleMarker.prototype.initialize.call(this, bike.point, {
+                weight: 2,
+                color: '#000',
+                opacity: 1,
+                radius: 4,
+                fillColor: '#ff0',
+                fillOpacity: 1
+            });
+            this.bindLabel(bike.name);
         }
     });
 }
@@ -263,7 +312,7 @@ Update = {
                 Message.showText('Data could not be fetched');
             },
             success: function(data) {
-                if (!data.stations.length && !data.trains.length) {
+                if (!data.stations.length && !data.trains.length && !data.bikes.length) {
                     Message.showText('No data returned');
                     return;
                 }
@@ -276,6 +325,7 @@ Update = {
                     document.getElementById('station_name').innerHTML = data.station;
                 }
 
+                var bikemarkers;
                 var markers;
                 if (refresh) {
                     var center = data.center;
@@ -303,6 +353,7 @@ Update = {
 
                     stations.clearLayers();
                     trains.clearLayers();
+		    bikes.clearLayers();
                     train_by_id = new Array();
 
                     var lines = data.polylines;
@@ -336,6 +387,7 @@ Update = {
                     }
 
                     markers = data.stations;
+                    bikemarkers = data.bikes;
                     if (data.trains) markers = markers.concat(data.trains);
 
                 } else {
@@ -344,29 +396,45 @@ Update = {
                     }
                     markers = data.trains;
                 }
-
+		var showBikes=document.getElementById("selectBikes").checked;
+		var showTubeStations=document.getElementById("selectTubeStations").checked;
+		var showTubeTrains=document.getElementById("selectTubeTrains").checked;
                 if (Update.refreshDataTimeout) {
                     window.clearTimeout(Update.refreshDataTimeout);
                 }
                 Update.refreshDataTimeout = window.setTimeout(Update.mapSubsequent, 1000*60*(TrainTimes.refresh||2));
+		if(showBikes)
+		{
+			for (var pos=0; bikemarkers && pos<bikemarkers.length; pos++) {
+			    if (bikemarkers[pos].name) { // Bike
+				    bikes.addLayer( new Bike(bikemarkers[pos]) );
+			    }
+			}
+		}
 
-                for (var pos=0; markers && pos<markers.length; pos++) {
+		for (var pos=0; markers && pos<markers.length; pos++) {
                     if (markers[pos].name) { // Station
-                        if (!TrainTimes.station_hide) {
-                            stations.addLayer( new Station(markers[pos]) );
-                        }
-                    } else if (markers[pos].title) { // Train
-                        var train_id = markers[pos].id;
-                        if (TrainTimes.keep_trains && train_by_id[train_id]) {
-                            train = train_by_id[train_id];
-                            train.updateDetails(markers[pos]);
-                        } else {
-                            var t = new Train(markers[pos]);
-                            trains.addLayer(t);
-                            if (TrainTimes.permanent_train_label) {
-                                t.showLabel();
+		        if(showTubeStations)
+    		        {
+                            if (!TrainTimes.station_hide) {
+                                stations.addLayer( new Station(markers[pos]) );
                             }
+		        }
+                    } else if (markers[pos].title) { // Train
+			if(showTubeTrains)
+			{
+                            var train_id = markers[pos].id;
+                            if (TrainTimes.keep_trains && train_by_id[train_id]) {
+                                train = train_by_id[train_id];
+                                train.updateDetails(markers[pos]);
+                            } else {
+                                var t = new Train(markers[pos]);
+                                trains.addLayer(t);
+                                if (TrainTimes.permanent_train_label) {
+                                    t.showLabel();
+                                }
                             train_by_id[train_id] = t;
+			    }
                         }
                     }
                 }
