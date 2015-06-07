@@ -267,6 +267,26 @@ if format=='traintimes':
             })
     grr = json.dumps(outJ, indent=4)
 
+###start cameras
+    api = 'https://s3-eu-west-1.amazonaws.com/tfl.pub/Jamcams/jamcams-camera-list.xml'
+    try:
+    	if time.time() - os.path.getmtime('cache/cameras') > 600:
+    		raise Exception, 'Too old'
+    	live = open(dir + 'cache/cameras').read()
+    except:
+    	live = urllib.urlopen(api).read()
+    	fp = open(dir + 'cache/cameras' , 'w')
+    	fp.write(live)
+    	fp.close()
+    
+    print_debug( "Processing XML")
+    objcam = xmltodict.parse(live)
+    grrcameras = json.dumps(objcam['syndicatedFeed']['cameraList']['camera'], indent=4)
+    grrcameras = grrcameras.replace("@available","available")
+    grrcameras = grrcameras.replace("@id","id")
+###end cameras
+
+
 ###start bike
     api = 'https://tfl.gov.uk/tfl/syndication/feeds/cycle-hire/livecyclehireupdates.xml'
     try:
@@ -280,20 +300,15 @@ if format=='traintimes':
     	fp.close()
     
     print_debug( "Processing XML")
-    #with open('/root/bike.xml') as fd:
-    obj = xmltodict.parse(live) #fd.read()
-#    for station in obj['stations']['station']:
-#    	print station['name']+station['lat']+station['long']+station['nbBikes']+station['nbEmptyDocks']+station['nbDocks']
+    obj = xmltodict.parse(live)
     
     grrbike = json.dumps(obj['stations']['station'], indent=4)
     grrbike= grrbike.replace("station", "bike")
-#    print grrbike
 
 ###end bike
 
     stations = open(dir + 'london-stations-new2.js').read()
-    grr = grr[:-2] + ',\n' + stations + ',\n "bikes": ' + grrbike + '}' 
-#    print grr
+    grr = grr[:-2] + ',\n' + stations + ',\n "bikes": ' + grrbike + ',\n "cameras": ' + grrcameras +'}' 
     fp = open(dir + '../data/london.jsonN', 'w')
     fp.write(grr)
     fp.close()

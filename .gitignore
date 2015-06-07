@@ -1,2 +1,4 @@
 data/london.json
 bin/cache
+*.swp
+*.swo

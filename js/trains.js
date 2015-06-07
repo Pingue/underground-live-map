@@ -2,6 +2,7 @@ var map = null;
 var trains = new L.LayerGroup([]);
 var stations = new L.FeatureGroup([]);
 var bikes = new L.FeatureGroup([]);
+var cameras = new L.FeatureGroup([]);
 var train_by_id = new Array();
 var starttime = new Date();
 var extra = 0;
@@ -60,6 +61,7 @@ function load() {
     trains.addTo(map);
     stations.addTo(map);
     bikes.addTo(map);
+    cameras.addTo(map);
     Update.mapStart();
 }
 
@@ -98,6 +100,47 @@ if (TrainTimes.station_icon) {
                 fillOpacity: 1
             });
             this.bindLabel(station.name);
+        }
+    });
+}
+
+
+var Camera;
+if (TrainTimes.camera_icon) {
+    var baseIcon = L.Icon.extend({
+        options: {
+            shadowUrl: "http://traintimes.org.uk/map/tube/i/pin_shadow.png",
+            shadowSize: [ 22, 20 ],
+            shadowAnchor: [ 6, 20 ]
+        }
+    });
+    Camera = L.Marker.extend({
+        initialize: function(camera, options) {
+	    var cameralatlong = L.latLng(camera.lat, camera.lng)
+            L.Marker.prototype.initialize.call(this, cameralatlong, options);
+            this.bindLabel(camera.location + "<br/>" + "<img src='https://s3-eu-west-1.amazonaws.com/tfl.pub/Jamcams/" + camera.file + "'>");
+        },
+        options: {
+            icon: new baseIcon({
+		iconUrl: "http://www.classtools.net/_FAKEBOOK/pics/camera.png",
+		iconSize: [ 20, 20 ],
+                iconAnchor: [ 10, 20 ],
+                labelAnchor: [ 4, -13 ]
+            })
+        }
+    });
+} else {
+    Camera = L.CircleMarker.extend({
+        initialize: function(camera, options) {
+            L.CircleMarker.prototype.initialize.call(this, camera.point, {
+                weight: 2,
+                color: '#000',
+                opacity: 1,
+                radius: 4,
+                fillColor: '#ff0',
+                fillOpacity: 1
+            });
+            this.bindLabel(camera.name);
         }
     });
 }
@@ -312,7 +355,7 @@ Update = {
                 Message.showText('Data could not be fetched');
             },
             success: function(data) {
-                if (!data.stations.length && !data.trains.length && !data.bikes.length) {
+                if (!data.stations.length && !data.trains.length && !data.bikes.length && !data.cameras.length) {
                     Message.showText('No data returned');
                     return;
                 }
@@ -325,6 +368,7 @@ Update = {
                     document.getElementById('station_name').innerHTML = data.station;
                 }
 
+                var cameramarkers;
                 var bikemarkers;
                 var markers;
                 if (refresh) {
@@ -354,6 +398,7 @@ Update = {
                     stations.clearLayers();
                     trains.clearLayers();
 		    bikes.clearLayers();
+		    cameras.clearLayers();
                     train_by_id = new Array();
 
                     var lines = data.polylines;
@@ -388,6 +433,7 @@ Update = {
 
                     markers = data.stations;
                     bikemarkers = data.bikes;
+                    cameramarkers = data.cameras;
                     if (data.trains) markers = markers.concat(data.trains);
 
                 } else {
@@ -396,6 +442,7 @@ Update = {
                     }
                     markers = data.trains;
                 }
+		var showCameras=document.getElementById("selectCameras").checked;
 		var showBikes=document.getElementById("selectBikes").checked;
 		var showTubeStations=document.getElementById("selectTubeStations").checked;
 		var showTubeTrains=document.getElementById("selectTubeTrains").checked;
@@ -403,6 +450,15 @@ Update = {
                     window.clearTimeout(Update.refreshDataTimeout);
                 }
                 Update.refreshDataTimeout = window.setTimeout(Update.mapSubsequent, 1000*60*(TrainTimes.refresh||2));
+		if(showCameras)
+		{
+			for (var pos=0; cameramarkers && pos<cameramarkers.length; pos++) {
+			    if (cameramarkers[pos].location && cameramarkers[pos].available=="true") { // Camera
+				    cameras.addLayer( new Camera(cameramarkers[pos]) );
+			    }
+			}
+		}
+
 		if(showBikes)
 		{
 			for (var pos=0; bikemarkers && pos<bikemarkers.length; pos++) {
