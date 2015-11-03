@@ -1,0 +1,101 @@
+=== https://api.tfl.gov.uk/Place?lat=51.5024265&lon=-0.4232746&radius=200&&app_id=cd00a446&app_key=bb862cf9b6f46d80f1c4e2818446b681&includeChildren=True
+Places
+	Place
+		PlaceType=StopPoint, StopType=NaptanOnstreetBusCoachStopPair
+			PlaceType=StopPoint, StopType=NaptanPublicBusCoachTram (NB, this structure is always followed, even if 1 stop)
+				Direction (Compass and Towards)
+				Common Name
+				Indicator
+				Lat
+				Lon
+			Lines
+				Name
+			Distance (presumably from search centre)
+		PlaceType=OysterTicketShop
+			Lat
+			Lon
+			Distance
+			Common Name
+			AdditionalProperties
+				Key=Address, Value=?
+				Key=Postcode, Value=?
+		PlaceType=StopPoint, StopType=NaptanMetroStation
+			Lat
+			Lon
+			Modes
+			Distance
+			CommonName
+			Lines
+				Name
+			PlaceType=StopPoint, StopType=NaptanMetroPlatform
+				Indicator (presumably)
+			PlaceType=StopPoint, StopType=NaptanMetroEntrance
+				Indicator
+			PlaceType=StopPoint, StopType=NaptanOnstreetBusCoachStopCluster
+				Additional Properties "key": "Zone", 
+				Additional Properties "key": "Toilets",
+				Additional Properties "key": "Gates",
+				Additional Properties "key": "Address",
+				ETC
+
+
+USE CASE
+
+Select "Near here" and radius (ie Start)
+
+TO DO: SHOW MAP OF YOUR CURRENT LOCATION, WITH RADIUS CIRCLE DRAWN ON. USE LEAFLET
+
+DONE	GRAB ALL PLACES FROM TFL
+	SEARCH NATIONAL RAIL AS WELL
+DONE	FIND MODES OF TRANSPORT AVAILABLE FROM THESE PLACES
+		Select Mode of Transport
+			Bus
+				Which Line/All Lines
+					GRAB DEPARTURES
+					SHOW NEAREST STOP FOR THAT LINE
+					SHOW DEPARTURES FOR THAT STOP/LINE
+			Tube
+				Which Line/All Lines
+					GRAB DEPARTURES
+					SHOW NEAREST STOP FOR THAT LINE
+					SHOW DEPARTURES FOR THAT STOP/LINE
+			Train
+				Show Departures
+		Select Place
+			What details to view
+				Lines
+				Platforms
+				Departures
+				Facilities
+				Address etc	
+		Select Journey
+			Destination
+				LOOK IT UP
+
+
+http://api.tfl.gov.uk/#Line etc
+
+
+https://tfl.gov.uk/tfl/syndication/feeds/step-free-tube-guide.xml
+
+http://www.naptan.org.uk/schema/schemas.htm
+
+https://data.gov.uk/dataset/naptan
+
+http://81.17.70.199/naptan/stopTypes.htm
+
+
+PAGE:
+1) Format
+2) Add
+3) Add
+4) Add
+5) Deal with children of stopType NaptanMetroEntrance
+show phone number (Address-phoneNo)
+show zone
+expand timetables on request
+show map of area - embed gmap
+sort bus times
+show list of stops
+datatables departures, or something that allows dynamic filters
+6) Do I need this? I'm only going to show departures, and that's doable with a good filter on the dep table. maybe the link from 5) should just link to 4)

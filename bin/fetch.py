@@ -287,8 +287,31 @@ if format=='traintimes':
 ###end cameras
 
 
+###start facility
+    api = 'http://data.tfl.gov.uk/tfl/syndication/feeds/stations-facilities.xml?app_id=cd00a446&app_key=bb862cf9b6f46d80f1c4e2818446b681'
+    try:
+    	if time.time() - os.path.getmtime('cache/facility') > 100:
+    		raise Exception, 'Too old'
+    	live = open(dir + 'cache/facility').read()
+    except:
+    	live = urllib.urlopen(api).read()
+    	fp = open(dir + 'cache/facility' , 'w')
+    	fp.write(live)
+    	fp.close()
+    
+    print_debug( "Processing XML")
+    obj = xmltodict.parse(live)
+    
+    grrfacility = json.dumps(obj)
+    fp = open(dir + '../data/facility.json' , 'w')
+    fp.write(grrfacility)
+    fp.close()
+
+###end facility
+
+
 ###start bike
-    api = 'https://tfl.gov.uk/tfl/syndication/feeds/cycle-hire/livecyclehireupdates.xml'
+    api = 'https://tfl.gov.uk/tfl/syndication/feeds/cycle-hire/livecyclehireupdates.xml?app_id=cd00a446&app_key=bb862cf9b6f46d80f1c4e2818446b681'
     try:
     	if time.time() - os.path.getmtime('cache/bike') > 100:
     		raise Exception, 'Too old'
